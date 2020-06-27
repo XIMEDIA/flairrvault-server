@@ -3,14 +3,14 @@ require('dotenv').config(); // Load variables from .env into the environment
 const timestamps = require('./timestamps');
 
 /** Configuration **/
-const nanoNodeUrl = process.env.NANO_NODE_URL || `http://172.31.7.100:7076`; // Nano node RPC url
-const nanoWorkNodeUrl = process.env.NANO_WORK_NODE_URL || `http://74.82.30.7:7076`; // Nano work node RPC url
-const listeningPort = process.env.APP_PORT || 9950; // Port this app will listen on
+const nanoNodeUrl = process.env.NANO_NODE_URL || `http://localhost:7076`; // Nano node RPC url
+const nanoWorkNodeUrl = process.env.NANO_WORK_NODE_URL || `http://localhost:7076`; // Nano work node RPC url
+const listeningPort = process.env.APP_PORT || 9900; // Port this app will listen on
 
 const useDPoW = !!process.env.USE_DPOW || false; // Is the Distributed Proof of Work system used? (Requires API Key)
 
-const useRedisCache = !!process.env.USE_REDIS || true; // Change this if you are not running a Redis server.  Will use in memory cache instead.
-const redisCacheUrl = process.env.REDIS_HOST || `172.31.25.214`; // Url to the redis server (If used)
+const useRedisCache = !!process.env.USE_REDIS || false; // Change this if you are not running a Redis server.  Will use in memory cache instead.
+const redisCacheUrl = process.env.REDIS_HOST || `localhost`; // Url to the redis server (If used)
 const redisCacheTime = 60 * 60 * 24; // Store work for 24 Hours
 const memoryCacheLength = 800; // How much work to store in memory (If used)
 
@@ -30,15 +30,15 @@ app.use(express.json());
 // Serve the production copy of the wallet
 app.use(express.static('static'));
 
-// Allow requests to recommended reps
-app.get('/api/recommended-representatives', async (req, res) => {
-  const reps = await getCache('recommended-reps');
-  if (reps) {
-    return res.json(JSON.parse(reps));
-  } else {
-    return await getRecommendedReps();
-  }
-});
+// // Allow requests to recommended reps
+// app.get('/api/recommended-representatives', async (req, res) => {
+//   const reps = await getCache('recommended-reps');
+//   if (reps) {
+//     return res.json(JSON.parse(reps));
+//   } else {
+//     return await getRecommendedReps();
+//   }
+// });
 
 // Allow certain requests to the Nano RPC and cache work requests
 app.post('/api/node-api', async (req, res) => {
@@ -61,6 +61,8 @@ app.post('/api/node-api', async (req, res) => {
   ];
   if (!req.body.action || allowedActions.indexOf(req.body.action) === -1) {
     return res.status(500).json({ error: `Action ${req.body.action} not allowed` });
+  } else {
+    console.log(`Received request: ${JSON.stringify(req.body)}.`);
   }
 
   let workRequest = false;
@@ -73,6 +75,7 @@ app.post('/api/node-api', async (req, res) => {
   if (req.query && req.query.node && req.query.node.length > 4) {
     nodeUrl = req.query.node;
     nodeOverride = true;
+    console.log('Node is being overwritten!');
   }
 
   // Cache work requests
@@ -101,26 +104,26 @@ app.post('/api/node-api', async (req, res) => {
   }
 
   // Determine if we use DPoW instead of proxying to the nano node
-  if (workRequest && useDPoW) {
-    return request({
-      method: 'post',
-      uri: process.env.DPOW_URL,
-      json: true,
-      body: {
-        user: process.env.DPOW_USER,
-        api_key: process.env.DPOW_KEY,
-        hash: req.body.hash,
-        timeout: 10,
-      }
-    })
-      .then(async (dpowRes) => {
-        if (dpowRes && dpowRes.work) {
-          putCache(req.body.hash, dpowRes.work);
-        }
-        res.json(dpowRes)
-      })
-      .catch(err => res.status(500).json(err.toString()));
-  }
+  // if (workRequest && useDPoW) {
+  //   return request({
+  //     method: 'post',
+  //     uri: process.env.DPOW_URL,
+  //     json: true,
+  //     body: {
+  //       user: process.env.DPOW_USER,
+  //       api_key: process.env.DPOW_KEY,
+  //       hash: req.body.hash,
+  //       timeout: 10,
+  //     }
+  //   })
+  //     .then(async (dpowRes) => {
+  //       if (dpowRes && dpowRes.work) {
+  //         putCache(req.body.hash, dpowRes.work);
+  //       }
+  //       res.json(dpowRes)
+  //     })
+  //     .catch(err => res.status(500).json(err.toString()));
+  // }
 
   // Send the request to the Nano node and return the response
   request({ method: 'post', uri: nodeUrl, body: req.body, json: true })
@@ -179,22 +182,22 @@ if (useRedisCache) {
   };
 }
 
-function getRecommendedReps() {
-  return request({
-    method: 'get',
-    uri: `https://mynano.ninja/api/accounts/verified`,
-    json: true,
-  }).then(res => {
-    putCache('recommended-reps', JSON.stringify(res), 45 * 60); // Store for 45 minutes
+// function getRecommendedReps() {
+//   return request({
+//     method: 'get',
+//     uri: `https://mynano.ninja/api/accounts/verified`,
+//     json: true,
+//   }).then(res => {
+//     putCache('recommended-reps', JSON.stringify(res), 45 * 60); // Store for 45 minutes
 
-    return res;
-  });
-}
+//     return res;
+//   });
+// }
 
-// Recache the recommended reps every 15 minutes
-function pollRecommended() {
-  getRecommendedReps();
-  setInterval(getRecommendedReps, 15 * 60 * 1000);
-}
+// // Recache the recommended reps every 15 minutes
+// function pollRecommended() {
+//   getRecommendedReps();
+//   setInterval(getRecommendedReps, 15 * 60 * 1000);
+// }
 
-pollRecommended();
+// pollRecommended();
