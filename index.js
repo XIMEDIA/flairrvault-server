@@ -5,8 +5,8 @@ require('dotenv').config({path: '../../.env'})
 const timestamps = require('./timestamps');
 
 /** Configuration **/
-const nanoNodeUrl = process.env.NANO_NODE_URL || `http://localhost:7096`; // Nano node RPC url
-const nanoWorkNodeUrl = process.env.NANO_WORK_NODE_URL || `http://localhost:7096`; // Nano work node RPC url
+const nanoNodeUrl = process.env.NANO_NODE_URL || `http://localhost:7076`; // Nano node RPC url
+const nanoWorkNodeUrl = process.env.NANO_WORK_NODE_URL || `http://localhost:7076`; // Nano work node RPC url
 const listeningPort = process.env.APP_PORT || 9900; // Port this app will listen on
 
 const useDPoW = !!process.env.USE_DPOW || false; // Is the Distributed Proof of Work system used? (Requires API Key)
@@ -41,8 +41,7 @@ app.use(express.static('static'));
 //     return await getRecommendedReps();
 //   }
 // });
-console.log(process.env.NANO_NODE_URL);
-console.log(process.env.NANO_WORK_NODE_URL);
+
 // Allow certain requests to the Nano RPC and cache work requests
 app.post('/api/node-api', async (req, res) => {
   const allowedActions = [
