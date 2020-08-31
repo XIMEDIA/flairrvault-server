@@ -39,7 +39,8 @@ app.use(express.static('static'));
 //     return await getRecommendedReps();
 //   }
 // });
-
+console.log(process.env.NANO_NODE_URL);
+console.log(process.env.NANO_WORK_NODE_URL);
 // Allow certain requests to the Nano RPC and cache work requests
 app.post('/api/node-api', async (req, res) => {
   const allowedActions = [
