@@ -1,4 +1,6 @@
-require('dotenv').config(); // Load variables from .env into the environment
+// Load variables from .env into the environment
+require('dotenv').config({path: '../../.env'})
+
 
 const timestamps = require('./timestamps');
 
