@@ -149,7 +149,7 @@ app.post('/api/node-api', async (req, res) => {
       }
       res.json(proxyRes)
     })
-    .catch(err => res.status(500).json(err.toString()));
+    .catch(err => {console.log(err); res.status(500).json(err.toString())});
 });
 
 // Redirect all other GET requests to wallet
